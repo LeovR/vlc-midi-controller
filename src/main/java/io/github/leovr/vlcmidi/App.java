@@ -1,5 +1,6 @@
 package io.github.leovr.vlcmidi;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.leovr.vlcmidi.midi.MidiNote;
 import lombok.extern.slf4j.Slf4j;
 import uk.co.caprica.vlcj.discovery.NativeDiscovery;
@@ -31,6 +32,7 @@ public class App extends JFrame {
     private static final MidiNote[] AVAILABLE_MIDI_NOTES = buildAvailableMidiNotes();
     private DefaultTableModel tableModel;
     private VlcMidiPreferences preferences;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private static MidiNote[] buildAvailableMidiNotes() {
         return Stream.concat(Stream.of((MidiNote) null), IntStream.range(-2, 8).boxed().flatMap(octave -> Arrays.stream(MidiNote.NOTES).map(note -> new MidiNote(note, octave, 0, true)))).toArray(size -> new MidiNote[size]);
