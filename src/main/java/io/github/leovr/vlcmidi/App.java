@@ -249,17 +249,8 @@ public class App extends JFrame {
             if (tableModel.getRowCount() <= 0) {
                 return;
             }
-            final List<VideoMidiNoteMapping> mappings = new ArrayList<>();
-            for (int i = 0; i < tableModel.getRowCount(); i++) {
-                MidiNote midiNote = (MidiNote) tableModel.getValueAt(i, 1);
-                if (midiNote == null) {
-                    continue;
-                }
-                mappings.add(new VideoMidiNoteMapping((File) tableModel.getValueAt(i, 0), midiNote));
-            }
-            SwingUtilities.invokeLater(() -> {
-                startVideo(mappings, (MidiDevice.Info) midiPortComboBox.getSelectedItem());
-            });
+            final List<VideoMidiNoteMapping> mappings = getVideoMidiNoteMappings().stream().filter(videoMidiNoteMapping -> videoMidiNoteMapping.getMidiNote() != null).collect(Collectors.toList());
+            SwingUtilities.invokeLater(() -> startVideo(mappings, (MidiDevice.Info) midiPortComboBox.getSelectedItem()));
         });
 
         final GroupLayout bottomPanelLayout = new GroupLayout(bottomPanel);
@@ -278,6 +269,15 @@ public class App extends JFrame {
                                 .addComponent(startButton)
                                 .addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
+    }
+
+    private List<VideoMidiNoteMapping> getVideoMidiNoteMappings() {
+        final List<VideoMidiNoteMapping> mappings = new ArrayList<>();
+        for (int i = 0; i < tableModel.getRowCount(); i++) {
+            final MidiNote midiNote = (MidiNote) tableModel.getValueAt(i, 1);
+            mappings.add(new VideoMidiNoteMapping((File) tableModel.getValueAt(i, 0), midiNote));
+        }
+        return mappings;
     }
 
     private void startVideo(final List<VideoMidiNoteMapping> mappings, final MidiDevice.Info deviceInfo) {
