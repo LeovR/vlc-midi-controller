@@ -177,11 +177,10 @@ public class App extends JFrame {
 
         addVideosButton.setText("Video hinzufügen");
         addVideosButton.addActionListener(e -> {
-            final JFileChooser fileChooser = new JFileChooser();
+            final JFileChooser fileChooser = new JFileChooser(preferences.getCurrentDirectory());
             fileChooser.setFileFilter(new FileNameExtensionFilter("Video Dateien", new VideoFileFilter().getExtensions()));
             fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
             fileChooser.setMultiSelectionEnabled(true);
-            fileChooser.setCurrentDirectory(preferences.getCurrentDirectory());
             final int returnValue = fileChooser.showDialog(this, "Hinzufügen");
             if (returnValue == JFileChooser.APPROVE_OPTION) {
                 preferences.setCurrentDirectory(fileChooser.getCurrentDirectory());
