@@ -150,7 +150,7 @@ public class App extends JFrame {
                     setText("Nicht zugewiesen");
                 } else {
                     final MidiNote midiNote = (MidiNote) value;
-                    setText(midiNote.getNote() + " " + midiNote.getOctave());
+                    setText(midiNote.getNote() + " " + midiNote.getOctave() + " Ch. " + midiNote.getChannel());
                 }
                 return this;
             }
@@ -164,7 +164,7 @@ public class App extends JFrame {
             }
         });
         final JComboBox<MidiNote> midiNoteComboBox = new JComboBox<>(AVAILABLE_MIDI_NOTES);
-        midiNoteComboBox.setRenderer((list, value, index, isSelected, cellHasFocus) -> value == null ? new JLabel("Nicht zugewiesen") : new JLabel(value.getNote() + " " + value.getOctave()));
+        midiNoteComboBox.setRenderer((list, value, index, isSelected, cellHasFocus) -> value == null ? new JLabel("Nicht zugewiesen") : new JLabel(value.getNote() + " " + value.getOctave() + " Ch. " + value.getChannel()));
         videoFilesTable.setDefaultEditor(MidiNote.class, new DefaultCellEditor(midiNoteComboBox));
         videoFilesTable.getTableHeader().setReorderingAllowed(false);
         videoFilesScrollPanel.setViewportView(videoFilesTable);
