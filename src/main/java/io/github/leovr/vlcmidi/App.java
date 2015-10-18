@@ -14,7 +14,9 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.KeyEvent;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -79,9 +81,10 @@ public class App extends JFrame {
             System.exit(1);
         }
 
-
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setTitle("MIDI Controlled Video Player");
+
+        initMenu();
 
         initMidiPortPanel();
 
@@ -90,6 +93,85 @@ public class App extends JFrame {
         initBottomPanel();
 
         initGeneralLayout();
+    }
+
+    private void initMenu() {
+        final JMenuBar menuBar = new JMenuBar();
+
+        final JMenu menu = new JMenu("Datei");
+        menu.setMnemonic(KeyEvent.VK_D);
+
+        final JMenuItem menuItemLoad = new JMenuItem("Videoliste laden", KeyEvent.VK_L);
+        menuItemLoad.addActionListener(e -> loadVideoList());
+        menu.add(menuItemLoad);
+        final JMenuItem menuItemSave = new JMenuItem("Videoliste speichern", KeyEvent.VK_S);
+        menuItemSave.addActionListener(e -> saveVideoList());
+        menu.add(menuItemSave);
+
+        menuBar.add(menu);
+
+        setJMenuBar(menuBar);
+    }
+
+    private void saveVideoList() {
+        final JFileChooser fileChooser = new JFileChooser(preferences.getConfigCurrentDirectory());
+        fileChooser.setFileFilter(new FileNameExtensionFilter("JSON Datei", "json"));
+        fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        fileChooser.setMultiSelectionEnabled(false);
+        final int returnValue = fileChooser.showDialog(this, "Speichern");
+        if (returnValue == JFileChooser.APPROVE_OPTION) {
+            preferences.setConfigCurrentDirectory(fileChooser.getCurrentDirectory());
+            final File saveDestination;
+            if (!fileChooser.getSelectedFile().getAbsolutePath().endsWith(".json")) {
+                saveDestination = new File(fileChooser.getSelectedFile() + ".json");
+            } else {
+                saveDestination = fileChooser.getSelectedFile();
+            }
+            saveVideoList(saveDestination);
+        }
+    }
+
+    private void loadVideoList() {
+        final JFileChooser fileChooser = new JFileChooser(preferences.getConfigCurrentDirectory());
+        fileChooser.setFileFilter(new FileNameExtensionFilter("JSON Datei", "json"));
+        fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        fileChooser.setMultiSelectionEnabled(false);
+        final int returnValue = fileChooser.showDialog(this, "Laden");
+        if (returnValue == JFileChooser.APPROVE_OPTION) {
+            preferences.setConfigCurrentDirectory(fileChooser.getCurrentDirectory());
+            loadVideoList(fileChooser.getSelectedFile());
+        }
+    }
+
+    private void loadVideoList(final File loadDestination) {
+        if (!loadDestination.exists()) {
+            return;
+        }
+
+        try {
+            final VlcMidiSaveFile saveFile = objectMapper.readValue(loadDestination, VlcMidiSaveFile.class);
+            fillTableModel(saveFile.getMappings());
+        } catch (final IOException e) {
+            log.error("Could not read save file: {}", loadDestination, e);
+        }
+    }
+
+    private void fillTableModel(final List<VideoMidiNoteMapping> mappings) {
+        tableModel.getDataVector().removeAllElements();
+        mappings.forEach(mapping -> tableModel.addRow(new Object[]{mapping.getFile(), mapping.getMidiNote()}));
+    }
+
+    private void saveVideoList(final File saveDestination) {
+        if (saveDestination.exists() && !saveDestination.canWrite()) {
+            return;
+        }
+
+        final VlcMidiSaveFile saveFile = new VlcMidiSaveFile(getVideoMidiNoteMappings());
+        try {
+            objectMapper.writer().writeValue(saveDestination, saveFile);
+        } catch (final IOException e) {
+            log.error("Could not write save file: {} to {}", saveFile, saveDestination, e);
+        }
     }
 
     private void initMidiPortPanel() {
