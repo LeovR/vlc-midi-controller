@@ -1,0 +1,16 @@
+package io.github.leovr.vlcmidi;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class VlcMidiSaveFile {
+
+    private List<VideoMidiNoteMapping> mappings = new ArrayList<>();
+}
