@@ -6,6 +6,7 @@ import java.util.prefs.Preferences;
 public class VlcMidiPreferences {
     private static final String MIDI_PORT = "midiPort";
     private static final String CURRENT_DIRECTORY = "currentDirectory";
+    private static final String CONFIG_CURRENT_DIRECTORY = "configCurrentDirectory";
     private final Preferences preferences;
 
     public VlcMidiPreferences() {
@@ -33,5 +34,20 @@ public class VlcMidiPreferences {
             return;
         }
         preferences.put(CURRENT_DIRECTORY, currentDirectory.getAbsolutePath());
+    }
+
+    public File getConfigCurrentDirectory() {
+        final String currentDirectory = preferences.get(CONFIG_CURRENT_DIRECTORY, null);
+        if (currentDirectory == null) {
+            return null;
+        }
+        return new File(currentDirectory);
+    }
+
+    public void setConfigCurrentDirectory(final File currentDirectory) {
+        if (currentDirectory == null) {
+            return;
+        }
+        preferences.put(CONFIG_CURRENT_DIRECTORY, currentDirectory.getAbsolutePath());
     }
 }
