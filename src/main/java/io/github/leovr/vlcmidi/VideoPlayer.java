@@ -66,7 +66,7 @@ public class VideoPlayer {
 
             @Override
             public void finished(final MediaPlayer mediaPlayer) {
-                cardLayout.show(frame.getContentPane(), BLACK_PANEL);
+                blackScreen();
             }
         };
 
@@ -83,6 +83,10 @@ public class VideoPlayer {
 
         mediaPlayer.mute();
 
+    }
+
+    private void blackScreen() {
+        cardLayout.show(frame.getContentPane(), BLACK_PANEL);
     }
 
 
@@ -103,23 +107,28 @@ public class VideoPlayer {
             midiDevice.open();
 
             final MidiNoteReceiver receiver = new MidiNoteReceiver();
-            receiver.registerMidiNoteListener(new MidiNoteListenerAdapter() {
-                @Override
-                public void onMidiNoteStart(final MidiNote midiNote) {
-                    final Integer index = midiNoteMapping.get(midiNote);
-                    if (index == null) {
-                        return;
-                    }
-                    SwingUtilities.invokeLater(() -> {
-                        showVideoPlayer();
-                        mediaListPlayer.playItem(index);
-                    });
-                }
-            });
+            registerMidiNoteListener(receiver);
             midiDevice.getTransmitter().setReceiver(receiver);
         } catch (final MidiUnavailableException e) {
             throw new RuntimeException(e);
         }
+    }
+
+
+    private void registerMidiNoteListener(final MidiNoteReceiver receiver) {
+        receiver.registerMidiNoteListener(new MidiNoteListenerAdapter() {
+            @Override
+            public void onMidiNoteStart(final MidiNote midiNote) {
+                final Integer index = midiNoteMapping.get(midiNote);
+                if (index == null) {
+                    return;
+                }
+                SwingUtilities.invokeLater(() -> {
+                    showVideoPlayer();
+                    mediaListPlayer.playItem(index);
+                });
+            }
+        });
     }
 
     private void showVideoPlayer() {
