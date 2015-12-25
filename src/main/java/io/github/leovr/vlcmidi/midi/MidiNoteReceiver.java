@@ -11,7 +11,8 @@ import java.util.List;
 @Slf4j
 public class MidiNoteReceiver implements Receiver {
 
-    private final List<MidiNoteListener> listeners = new ArrayList<>();
+    private final List<MidiNoteListener> midiNoteListeners = new ArrayList<>();
+    private final List<MidiControlChangeListener> midiControlChangeListeners = new ArrayList<>();
 
     @Override
     public void send(final MidiMessage message, final long timeStamp) {
@@ -19,26 +20,53 @@ public class MidiNoteReceiver implements Receiver {
             return;
         }
         final ShortMessage shortMessage = (ShortMessage) message;
-        final int octave = (shortMessage.getData1() / 12) - 2;
-        final int noteIndex = (shortMessage.getData1() % 12);
+        switch (shortMessage.getCommand()) {
+            case ShortMessage.NOTE_ON:
+            case ShortMessage.NOTE_OFF:
+                handleNormalNote(shortMessage);
+                break;
+            case ShortMessage.CONTROL_CHANGE:
+                handleControlChange(shortMessage);
+                break;
+        }
+    }
+
+    private void handleControlChange(final ShortMessage message) {
+        log.debug("Received control change message: {} {}", message.getData1(), message.getData2());
+        if (message.getData1() == 123 && message.getData2() == 0) {
+            midiControlChangeListeners.forEach(MidiControlChangeListener::onAllNotesOff);
+        }
+    }
+
+    private void handleNormalNote(final ShortMessage message) {
+        final int octave = (message.getData1() / 12) - 2;
+        final int noteIndex = (message.getData1() % 12);
         final String noteName = MidiNote.NOTES[noteIndex];
-        final boolean start = shortMessage.getCommand() == ShortMessage.NOTE_ON;
-        final MidiNote note = new MidiNote(noteName, octave, shortMessage.getChannel(), start);
+        final boolean start = message.getCommand() == ShortMessage.NOTE_ON;
+        final MidiNote note = new MidiNote(noteName, octave, message.getChannel(), start);
         log.debug("Received note: {}", note);
-        listeners.forEach(midiNoteListener -> midiNoteListener.onMidiNote(note));
+        midiNoteListeners.forEach(midiNoteListener -> midiNoteListener.onMidiNote(note));
         if (start) {
-            listeners.forEach(midiNoteListener -> midiNoteListener.onMidiNoteStart(note));
+            midiNoteListeners.forEach(midiNoteListener -> midiNoteListener.onMidiNoteStart(note));
         } else {
-            listeners.forEach(midiNoteListener -> midiNoteListener.onMidiNoteEnd(note));
+            midiNoteListeners.forEach(midiNoteListener -> midiNoteListener.onMidiNoteEnd(note));
         }
     }
 
     public void registerMidiNoteListener(final MidiNoteListener listener) {
-        listeners.add(listener);
+        midiNoteListeners.add(listener);
     }
 
     public boolean unregisterMidiNoteListener(final MidiNoteListener listener) {
-        return listeners.remove(listener);
+        return midiNoteListeners.remove(listener);
+    }
+
+    public void registerMidiControlChangeListener(final MidiControlChangeListener listener) {
+        midiControlChangeListeners.add(listener);
+    }
+
+    public boolean unregisterMidiControlChangeListener(final MidiControlChangeListener listener) {
+        return midiControlChangeListeners.remove(listener);
     }
 
     @Override
