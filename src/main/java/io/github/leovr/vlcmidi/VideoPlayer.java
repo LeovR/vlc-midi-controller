@@ -1,5 +1,6 @@
 package io.github.leovr.vlcmidi;
 
+import io.github.leovr.vlcmidi.midi.MidiControlChangeListenerAdapter;
 import io.github.leovr.vlcmidi.midi.MidiNote;
 import io.github.leovr.vlcmidi.midi.MidiNoteListenerAdapter;
 import io.github.leovr.vlcmidi.midi.MidiNoteReceiver;
@@ -108,12 +109,23 @@ public class VideoPlayer {
 
             final MidiNoteReceiver receiver = new MidiNoteReceiver();
             registerMidiNoteListener(receiver);
+            registerMidiControlChangeListener(receiver);
+
             midiDevice.getTransmitter().setReceiver(receiver);
         } catch (final MidiUnavailableException e) {
             throw new RuntimeException(e);
         }
     }
 
+    private void registerMidiControlChangeListener(final MidiNoteReceiver receiver) {
+        receiver.registerMidiControlChangeListener(new MidiControlChangeListenerAdapter() {
+            @Override
+            public void onAllNotesOff() {
+                blackScreen();
+                mediaListPlayer.stop();
+            }
+        });
+    }
 
     private void registerMidiNoteListener(final MidiNoteReceiver receiver) {
         receiver.registerMidiNoteListener(new MidiNoteListenerAdapter() {
