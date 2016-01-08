@@ -53,8 +53,16 @@ public class VideoPlayer {
         mediaPlayerComponent = new EmbeddedMediaListPlayerComponent() {
             @Override
             public void keyPressed(final KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
-                    mediaPlayer.setFullScreen(false);
+                switch (e.getKeyCode()) {
+                    case KeyEvent.VK_ESCAPE:
+                        mediaPlayer.setFullScreen(false);
+                        break;
+                    case KeyEvent.VK_ENTER:
+                        mediaPlayer.setFullScreen(!mediaPlayer.isFullScreen());
+                        break;
+                    case KeyEvent.VK_SPACE:
+                        stop();
+                        break;
                 }
             }
 
