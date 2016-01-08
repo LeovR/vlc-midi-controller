@@ -67,6 +67,11 @@ public class VideoPlayer {
             }
 
             @Override
+            protected String[] onGetMediaPlayerFactoryExtraArgs() {
+                return new String[]{"--file-caching=0", "--disc-caching=0"};
+            }
+
+            @Override
             public void mousePressed(final MouseEvent e) {
                 if (e.getClickCount() == 2) {
                     mediaPlayer.toggleFullScreen();
