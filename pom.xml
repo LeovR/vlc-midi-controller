@@ -63,17 +63,7 @@
         <dependency>
             <groupId>uk.co.caprica</groupId>
             <artifactId>vlcj</artifactId>
-            <version>3.10.0</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>jna-platform</artifactId>
-                    <groupId>net.java.dev.jna</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jna</artifactId>
-                    <groupId>net.java.dev.jna</groupId>
-                </exclusion>
-            </exclusions>
+            <version>3.10.1</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
