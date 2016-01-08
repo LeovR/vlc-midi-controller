@@ -121,10 +121,14 @@ public class VideoPlayer {
         receiver.registerMidiControlChangeListener(new MidiControlChangeListenerAdapter() {
             @Override
             public void onAllNotesOff() {
-                blackScreen();
-                mediaListPlayer.stop();
+                stop();
             }
         });
+    }
+
+    private void stop() {
+        blackScreen();
+        mediaListPlayer.stop();
     }
 
     private void registerMidiNoteListener(final MidiNoteReceiver receiver) {
