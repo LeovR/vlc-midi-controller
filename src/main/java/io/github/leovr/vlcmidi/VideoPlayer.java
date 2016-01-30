@@ -4,6 +4,7 @@ import io.github.leovr.vlcmidi.midi.MidiControlChangeListenerAdapter;
 import io.github.leovr.vlcmidi.midi.MidiNote;
 import io.github.leovr.vlcmidi.midi.MidiNoteListenerAdapter;
 import io.github.leovr.vlcmidi.midi.MidiNoteReceiver;
+import lombok.EqualsAndHashCode;
 import uk.co.caprica.vlcj.component.EmbeddedMediaListPlayerComponent;
 import uk.co.caprica.vlcj.medialist.MediaList;
 import uk.co.caprica.vlcj.player.MediaPlayer;
@@ -26,12 +27,25 @@ import java.util.Map;
 
 public class VideoPlayer {
 
+    @EqualsAndHashCode
+    private static class MidiNoteKey {
+        private final String note;
+        private final int octave;
+        private final int channel;
+
+        MidiNoteKey(final MidiNote midiNote) {
+            note = midiNote.getNote();
+            octave = midiNote.getOctave();
+            channel = midiNote.getChannel();
+        }
+    }
+
     public static final String BLACK_PANEL = "blackPanel";
     public static final String VIDEO_PLAYER = "videoPlayer";
     private final JFrame frame;
 
     private final EmbeddedMediaListPlayerComponent mediaPlayerComponent;
-    private final Map<MidiNote, Integer> midiNoteMapping = new HashMap<>();
+    private final Map<MidiNoteKey, Integer> midiNoteMapping = new HashMap<>();
     private final CardLayout cardLayout;
     private MidiDevice midiDevice;
     private final MediaListPlayer mediaListPlayer;
@@ -148,14 +162,23 @@ public class VideoPlayer {
         receiver.registerMidiNoteListener(new MidiNoteListenerAdapter() {
             @Override
             public void onMidiNoteStart(final MidiNote midiNote) {
-                final Integer index = midiNoteMapping.get(midiNote);
+                final Integer index = midiNoteMapping.get(new MidiNoteKey(midiNote));
                 if (index == null) {
                     return;
                 }
                 SwingUtilities.invokeLater(() -> {
                     showVideoPlayer();
-                    mediaListPlayer.playItem(index);
+                    mediaPlayer.prepareMedia(mediaListPlayer.getMediaList().items().get(index).mrl());
                 });
+            }
+
+            @Override
+            public void onMidiNoteEnd(final MidiNote midiNote) {
+                final Integer index = midiNoteMapping.get(new MidiNoteKey(midiNote));
+                if (index == null) {
+                    return;
+                }
+                SwingUtilities.invokeLater(() -> mediaListPlayer.playItem(index));
             }
         });
     }
@@ -171,7 +194,7 @@ public class VideoPlayer {
         for (int i = 0; i < mappings.size(); i++) {
             final VideoMidiNoteMapping mapping = mappings.get(i);
             mediaList.addMedia(mapping.getFile().getAbsolutePath());
-            midiNoteMapping.put(mapping.getMidiNote(), i);
+            midiNoteMapping.put(new MidiNoteKey(mapping.getMidiNote()), i);
         }
     }
 }
