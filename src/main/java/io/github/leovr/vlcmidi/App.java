@@ -1,5 +1,6 @@
 package io.github.leovr.vlcmidi;
 
+import com.beust.jcommander.JCommander;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.leovr.vlcmidi.midi.MidiNote;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +36,11 @@ public class App extends JFrame {
     private DefaultTableModel tableModel;
     private VlcMidiPreferences preferences;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private Options options;
+
+    public App(final Options options) {
+        this.options = options;
+    }
 
     private static MidiNote[] buildAvailableMidiNotes() {
         return Stream.concat(Stream.of((MidiNote) null), IntStream.range(-2, 8).boxed().flatMap(octave -> Arrays.stream(MidiNote.NOTES).map(note -> new MidiNote(note, octave, 0, true)))).toArray(size -> new MidiNote[size]);
@@ -42,7 +48,9 @@ public class App extends JFrame {
 
     public static void main(final String[] args) {
         new NativeDiscovery().discover();
-        final App app = new App();
+        Options options = new Options();
+        new JCommander(options, args);
+        final App app = new App(options);
         SwingUtilities.invokeLater(app::start);
     }
 
@@ -364,7 +372,7 @@ public class App extends JFrame {
 
     private void startVideo(final List<VideoMidiNoteMapping> mappings, final MidiDevice.Info deviceInfo) {
         preferences.setMidiPort(deviceInfo.getName());
-        final VideoPlayer videoPlayer = new VideoPlayer();
+        final VideoPlayer videoPlayer = new VideoPlayer(options);
         videoPlayer.start(deviceInfo, mappings);
     }
 

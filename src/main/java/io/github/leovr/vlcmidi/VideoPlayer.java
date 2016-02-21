@@ -51,7 +51,7 @@ public class VideoPlayer {
     private final MediaListPlayer mediaListPlayer;
     private final EmbeddedMediaPlayer mediaPlayer;
 
-    public VideoPlayer() {
+    public VideoPlayer(final Options options) {
         frame = new JFrame("Video Player");
         frame.setBounds(100, 100, 600, 400);
         frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
@@ -82,7 +82,10 @@ public class VideoPlayer {
 
             @Override
             protected String[] onGetMediaPlayerFactoryExtraArgs() {
-                return new String[]{"--file-caching=0", "--disc-caching=0"};
+                if (options.getCachingMilliseconds() == null) {
+                    return new String[]{"--file-caching=0", "--disc-caching=0"};
+                }
+                return new String[]{"--file-caching=" + options.getCachingMilliseconds(), "--disc-caching=" + options.getCachingMilliseconds()};
             }
 
             @Override
@@ -109,7 +112,11 @@ public class VideoPlayer {
         mediaListPlayer = mediaPlayerComponent.getMediaListPlayer();
         mediaPlayer.setFullScreenStrategy(new DefaultAdaptiveRuntimeFullScreenStrategy(frame));
 
-        mediaPlayer.mute();
+        if (!options.isSound()) {
+            mediaPlayer.mute();
+        }
+
+        mediaPlayer.setRepeat(false);
 
     }
 
