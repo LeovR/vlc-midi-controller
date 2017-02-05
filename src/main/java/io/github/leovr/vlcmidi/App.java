@@ -12,11 +12,13 @@ import javax.jmdns.ServiceInfo;
 import javax.sound.midi.MidiDevice;
 import javax.sound.midi.MidiSystem;
 import javax.sound.midi.MidiUnavailableException;
+import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultCellEditor;
 import javax.swing.GroupLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -26,6 +28,7 @@ import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.KeyStroke;
 import javax.swing.LayoutStyle;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
@@ -35,6 +38,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.Component;
+import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -300,6 +304,7 @@ public class App extends JFrame {
                                                            final int row, final int column) {
                 final File file = (File) value;
                 setText(file.getName());
+                setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
                 return this;
             }
         });
@@ -309,6 +314,14 @@ public class App extends JFrame {
                         new JLabel(value.getNote() + " " + value.getOctave() + " Ch. " + (value.getChannel()) + 1));
         videoFilesTable.setDefaultEditor(MidiNote.class, new DefaultCellEditor(midiNoteComboBox));
         videoFilesTable.getTableHeader().setReorderingAllowed(false);
+        videoFilesTable.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+                .put(KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0), "deleteRow");
+        videoFilesTable.getActionMap().put("deleteRow", new AbstractAction() {
+            @Override
+            public void actionPerformed(final ActionEvent e) {
+                Arrays.stream(videoFilesTable.getSelectedRows()).forEach(row -> tableModel.removeRow(row));
+            }
+        });
         videoFilesScrollPanel.setViewportView(videoFilesTable);
         if (videoFilesTable.getColumnModel().getColumnCount() > 0) {
             videoFilesTable.getColumnModel().getColumn(0).setResizable(false);
