@@ -12,4 +12,7 @@ public class Options {
     @Parameter(names = {"-c", "--caching"}, description = "Filecaching milliseconds")
     private Integer cachingMilliseconds;
 
+    @Parameter(names={"-b","--bonjour"},description = "Enable bonjour")
+    private boolean bonjour = false;
+
 }

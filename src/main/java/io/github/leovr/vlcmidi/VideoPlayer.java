@@ -1,5 +1,7 @@
 package io.github.leovr.vlcmidi;
 
+import io.github.leovr.rtipmidi.AppleMidiServer;
+import io.github.leovr.rtipmidi.MidiReceiverAppleMidiSession;
 import io.github.leovr.vlcmidi.midi.MidiControlChangeListenerAdapter;
 import io.github.leovr.vlcmidi.midi.MidiNote;
 import io.github.leovr.vlcmidi.midi.MidiNoteListenerAdapter;
@@ -15,8 +17,11 @@ import uk.co.caprica.vlcj.player.list.MediaListPlayer;
 import javax.sound.midi.MidiDevice;
 import javax.sound.midi.MidiSystem;
 import javax.sound.midi.MidiUnavailableException;
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
+import java.awt.CardLayout;
+import java.awt.Color;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
@@ -27,8 +32,10 @@ import java.util.Map;
 
 public class VideoPlayer {
 
+
     @EqualsAndHashCode
     private static class MidiNoteKey {
+
         private final String note;
         private final int octave;
         private final int channel;
@@ -50,6 +57,7 @@ public class VideoPlayer {
     private MidiDevice midiDevice;
     private final MediaListPlayer mediaListPlayer;
     private final EmbeddedMediaPlayer mediaPlayer;
+    private AppleMidiServer appleMidiServer;
 
     public VideoPlayer(final Options options) {
         frame = new JFrame("Video Player");
@@ -59,7 +67,12 @@ public class VideoPlayer {
             @Override
             public void windowClosing(final WindowEvent e) {
                 mediaPlayerComponent.release();
-                midiDevice.close();
+                if (midiDevice != null) {
+                    midiDevice.close();
+                }
+                if (appleMidiServer != null) {
+                    appleMidiServer.stop();
+                }
                 frame.dispose();
             }
         });
@@ -85,7 +98,8 @@ public class VideoPlayer {
                 if (options.getCachingMilliseconds() == null) {
                     return new String[]{"--file-caching=0", "--disc-caching=0"};
                 }
-                return new String[]{"--file-caching=" + options.getCachingMilliseconds(), "--disc-caching=" + options.getCachingMilliseconds()};
+                return new String[]{"--file-caching=" + options.getCachingMilliseconds(),
+                        "--disc-caching=" + options.getCachingMilliseconds()};
             }
 
             @Override
@@ -131,6 +145,27 @@ public class VideoPlayer {
         initMidi(deviceInfo);
 
         mediaPlayer.setFullScreen(true);
+    }
+
+    public void startRtpMidi(final List<VideoMidiNoteMapping> mappings) {
+        initMediaList(mappings);
+
+        initRtpMidi();
+
+        mediaPlayer.setFullScreen(true);
+    }
+
+    private void initRtpMidi() {
+
+        appleMidiServer = new AppleMidiServer("VLC MIDI Player", 50004);
+
+        final MidiNoteReceiver receiver = new MidiNoteReceiver();
+        registerMidiNoteListener(receiver);
+        registerMidiControlChangeListener(receiver);
+
+        appleMidiServer.addAppleMidiSession(new MidiReceiverAppleMidiSession(receiver));
+        appleMidiServer.start();
+
     }
 
     private void initMidi(final MidiDevice.Info deviceInfo) {

@@ -7,17 +7,40 @@ import lombok.extern.slf4j.Slf4j;
 import uk.co.caprica.vlcj.discovery.NativeDiscovery;
 import uk.co.caprica.vlcj.filter.VideoFileFilter;
 
+import javax.jmdns.JmDNS;
+import javax.jmdns.ServiceInfo;
 import javax.sound.midi.MidiDevice;
 import javax.sound.midi.MidiSystem;
 import javax.sound.midi.MidiUnavailableException;
-import javax.swing.*;
+import javax.swing.BorderFactory;
+import javax.swing.DefaultCellEditor;
+import javax.swing.GroupLayout;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.LayoutStyle;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.WindowConstants;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
-import java.awt.*;
+import java.awt.Component;
 import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -36,35 +59,67 @@ public class App extends JFrame {
     private DefaultTableModel tableModel;
     private VlcMidiPreferences preferences;
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private Options options;
+    private final Options options;
+    private VideoPlayer videoPlayer;
+    private JmDNS jmdns;
 
     public App(final Options options) {
         this.options = options;
     }
 
     private static MidiNote[] buildAvailableMidiNotes() {
-        return Stream.concat(Stream.of((MidiNote) null), IntStream.range(-2, 8).boxed().flatMap(octave -> Arrays.stream(MidiNote.NOTES).map(note -> new MidiNote(note, octave, 0, true)))).toArray(size -> new MidiNote[size]);
+        return Stream.concat(Stream.of((MidiNote) null), IntStream.range(-2, 8).boxed()
+                .flatMap(octave -> Arrays.stream(MidiNote.NOTES).map(note -> new MidiNote(note, octave, 0, true))))
+                .toArray(MidiNote[]::new);
     }
 
     public static void main(final String[] args) {
         new NativeDiscovery().discover();
-        Options options = new Options();
+        final Options options = new Options();
         new JCommander(options, args);
         final App app = new App(options);
         SwingUtilities.invokeLater(app::start);
     }
 
     private void start() {
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(final WindowEvent e) {
+                if (options.isBonjour() && jmdns != null) {
+                    jmdns.unregisterAllServices();
+                }
+            }
+        });
+
         initComponents();
 
         preferences = new VlcMidiPreferences();
 
         fillMidi(preferences.getMidiPort());
 
+        startBonjour();
+
         setVisible(true);
+
+    }
+
+
+    private void startBonjour() {
+        try {
+            jmdns = JmDNS.create(InetAddress.getLocalHost());
+            final ServiceInfo serviceInfo =
+                    ServiceInfo.create("_apple-midi._udp.local.", "VLC MIDI Player", 50004, "apple-midi");
+            jmdns.registerService(serviceInfo);
+        } catch (final IOException e) {
+            log.error("IOException creating JmDNS", e);
+        }
+
     }
 
     private void fillMidi(final String lastMidiPort) {
+        if (options.isBonjour()) {
+            return;
+        }
         final MidiDevice.Info[] deviceInfos = MidiSystem.getMidiDeviceInfo();
         final List<MidiDevice.Info> deviceInfoList = Arrays.stream(deviceInfos).filter(info -> {
             try {
@@ -74,10 +129,10 @@ public class App extends JFrame {
             }
             return false;
         }).collect(Collectors.toList());
-        deviceInfoList
-                .forEach(midiPortComboBox::addItem);
+        deviceInfoList.forEach(midiPortComboBox::addItem);
         if (lastMidiPort != null) {
-            deviceInfoList.stream().filter(info -> lastMidiPort.equals(info.getName())).findFirst().ifPresent(midiPortComboBox::setSelectedItem);
+            deviceInfoList.stream().filter(info -> lastMidiPort.equals(info.getName())).findFirst()
+                    .ifPresent(midiPortComboBox::setSelectedItem);
         }
     }
 
@@ -185,6 +240,9 @@ public class App extends JFrame {
     private void initMidiPortPanel() {
         midiPortPanel = new JPanel();
         midiPortComboBox = new JComboBox<>();
+        if (options.isBonjour()) {
+            return;
+        }
 
         midiPortPanel.setBorder(BorderFactory.createTitledBorder("MIDI Port"));
 
@@ -192,17 +250,13 @@ public class App extends JFrame {
 
         final GroupLayout midiPortPanelLayout = new GroupLayout(midiPortPanel);
         midiPortPanel.setLayout(midiPortPanelLayout);
-        midiPortPanelLayout.setHorizontalGroup(
-                midiPortPanelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
-                        .addGroup(midiPortPanelLayout.createSequentialGroup()
-                                .addContainerGap()
-                                .addComponent(midiPortComboBox, 0, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addContainerGap())
-        );
-        midiPortPanelLayout.setVerticalGroup(
-                midiPortPanelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
-                        .addComponent(midiPortComboBox, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-        );
+        midiPortPanelLayout.setHorizontalGroup(midiPortPanelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
+                .addGroup(midiPortPanelLayout.createSequentialGroup().addContainerGap()
+                        .addComponent(midiPortComboBox, 0, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addContainerGap()));
+        midiPortPanelLayout.setVerticalGroup(midiPortPanelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
+                .addComponent(midiPortComboBox, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+                        GroupLayout.PREFERRED_SIZE));
     }
 
     private void initVideoFilesPanel() {
@@ -212,19 +266,9 @@ public class App extends JFrame {
         final JButton addVideosButton = new JButton();
         videoFilesPanel.setBorder(BorderFactory.createTitledBorder("Video Dateien"));
 
-        tableModel = new DefaultTableModel(
-                new Object[][]{
-                },
-                new String[]{
-                        "Video Datei", "MIDI Note"
-                }
-        ) {
-            Class[] types = new Class[]{
-                    File.class, MidiNote.class
-            };
-            boolean[] canEdit = new boolean[]{
-                    false, true
-            };
+        tableModel = new DefaultTableModel(new Object[][]{}, new String[]{"Video Datei", "MIDI Note"}) {
+            Class[] types = new Class[]{File.class, MidiNote.class};
+            boolean[] canEdit = new boolean[]{false, true};
 
             public Class getColumnClass(final int columnIndex) {
                 return types[columnIndex];
@@ -237,7 +281,9 @@ public class App extends JFrame {
         videoFilesTable.setModel(tableModel);
         videoFilesTable.setDefaultRenderer(MidiNote.class, new DefaultTableCellRenderer() {
             @Override
-            public Component getTableCellRendererComponent(final JTable table, final Object value, final boolean isSelected, final boolean hasFocus, final int row, final int column) {
+            public Component getTableCellRendererComponent(final JTable table, final Object value,
+                                                           final boolean isSelected, final boolean hasFocus,
+                                                           final int row, final int column) {
                 if (value == null) {
                     setText("Nicht zugewiesen");
                 } else {
@@ -249,14 +295,18 @@ public class App extends JFrame {
         });
         videoFilesTable.setDefaultRenderer(File.class, new DefaultTableCellRenderer() {
             @Override
-            public Component getTableCellRendererComponent(final JTable table, final Object value, final boolean isSelected, final boolean hasFocus, final int row, final int column) {
+            public Component getTableCellRendererComponent(final JTable table, final Object value,
+                                                           final boolean isSelected, final boolean hasFocus,
+                                                           final int row, final int column) {
                 final File file = (File) value;
                 setText(file.getName());
                 return this;
             }
         });
         final JComboBox<MidiNote> midiNoteComboBox = new JComboBox<>(AVAILABLE_MIDI_NOTES);
-        midiNoteComboBox.setRenderer((list, value, index, isSelected, cellHasFocus) -> value == null ? new JLabel("Nicht zugewiesen") : new JLabel(value.getNote() + " " + value.getOctave() + " Ch. " + (value.getChannel()) + 1));
+        midiNoteComboBox.setRenderer(
+                (list, value, index, isSelected, cellHasFocus) -> value == null ? new JLabel("Nicht zugewiesen") :
+                        new JLabel(value.getNote() + " " + value.getOctave() + " Ch. " + (value.getChannel()) + 1));
         videoFilesTable.setDefaultEditor(MidiNote.class, new DefaultCellEditor(midiNoteComboBox));
         videoFilesTable.getTableHeader().setReorderingAllowed(false);
         videoFilesScrollPanel.setViewportView(videoFilesTable);
@@ -268,7 +318,8 @@ public class App extends JFrame {
         addVideosButton.setText("Video hinzufügen");
         addVideosButton.addActionListener(e -> {
             final JFileChooser fileChooser = new JFileChooser(preferences.getCurrentDirectory());
-            fileChooser.setFileFilter(new FileNameExtensionFilter("Video Dateien", new VideoFileFilter().getExtensions()));
+            fileChooser
+                    .setFileFilter(new FileNameExtensionFilter("Video Dateien", new VideoFileFilter().getExtensions()));
             fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
             fileChooser.setMultiSelectionEnabled(true);
             final int returnValue = fileChooser.showDialog(this, "Hinzufügen");
@@ -281,23 +332,19 @@ public class App extends JFrame {
         final GroupLayout videoFilesPanelLayout = new GroupLayout(videoFilesPanel);
         videoFilesPanel.setLayout(videoFilesPanelLayout);
         videoFilesPanelLayout.setHorizontalGroup(
-                videoFilesPanelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
-                        .addGroup(videoFilesPanelLayout.createSequentialGroup()
-                                .addContainerGap()
-                                .addGroup(videoFilesPanelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
-                                        .addComponent(videoFilesScrollPanel, GroupLayout.DEFAULT_SIZE, 549, Short.MAX_VALUE)
-                                        .addGroup(videoFilesPanelLayout.createSequentialGroup()
-                                                .addComponent(addVideosButton)
-                                                .addGap(0, 0, Short.MAX_VALUE))))
-        );
-        videoFilesPanelLayout.setVerticalGroup(
-                videoFilesPanelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
-                        .addGroup(videoFilesPanelLayout.createSequentialGroup()
-                                .addContainerGap()
-                                .addComponent(videoFilesScrollPanel, GroupLayout.PREFERRED_SIZE, 404, GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(addVideosButton))
-        );
+                videoFilesPanelLayout.createParallelGroup(GroupLayout.Alignment.LEADING).addGroup(
+                        videoFilesPanelLayout.createSequentialGroup().addContainerGap().addGroup(
+                                videoFilesPanelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
+                                        .addComponent(videoFilesScrollPanel, GroupLayout.DEFAULT_SIZE, 549,
+                                                Short.MAX_VALUE).addGroup(
+                                        videoFilesPanelLayout.createSequentialGroup().addComponent(addVideosButton)
+                                                .addGap(0, 0, Short.MAX_VALUE)))));
+        videoFilesPanelLayout.setVerticalGroup(videoFilesPanelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
+                .addGroup(videoFilesPanelLayout.createSequentialGroup().addContainerGap()
+                        .addComponent(videoFilesScrollPanel, GroupLayout.PREFERRED_SIZE, 404,
+                                GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED, GroupLayout.DEFAULT_SIZE,
+                                Short.MAX_VALUE).addComponent(addVideosButton)));
     }
 
     private void addFiles(final File[] selectedFiles) {
@@ -307,25 +354,20 @@ public class App extends JFrame {
     private void initGeneralLayout() {
         final GroupLayout layout = new GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
-        layout.setHorizontalGroup(
-                layout.createParallelGroup(GroupLayout.Alignment.LEADING)
-                        .addComponent(midiPortPanel, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(videoFilesPanel, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addGroup(layout.createSequentialGroup()
-                                .addContainerGap()
-                                .addComponent(bottomPanel, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addContainerGap())
-        );
-        layout.setVerticalGroup(
-                layout.createParallelGroup(GroupLayout.Alignment.LEADING)
-                        .addGroup(layout.createSequentialGroup()
-                                .addComponent(midiPortPanel, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(videoFilesPanel, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(bottomPanel, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-                                .addContainerGap())
-        );
+        layout.setHorizontalGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
+                .addComponent(midiPortPanel, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(videoFilesPanel, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addGroup(layout.createSequentialGroup().addContainerGap()
+                        .addComponent(bottomPanel, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addContainerGap()));
+        layout.setVerticalGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING).addGroup(
+                layout.createSequentialGroup()
+                        .addComponent(midiPortPanel, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+                                GroupLayout.PREFERRED_SIZE).addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(videoFilesPanel, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE,
+                                Short.MAX_VALUE).addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(bottomPanel, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE,
+                                GroupLayout.PREFERRED_SIZE).addContainerGap()));
 
         pack();
     }
@@ -339,26 +381,22 @@ public class App extends JFrame {
             if (tableModel.getRowCount() <= 0) {
                 return;
             }
-            final List<VideoMidiNoteMapping> mappings = getVideoMidiNoteMappings().stream().filter(videoMidiNoteMapping -> videoMidiNoteMapping.getMidiNote() != null).collect(Collectors.toList());
-            SwingUtilities.invokeLater(() -> startVideo(mappings, (MidiDevice.Info) midiPortComboBox.getSelectedItem()));
+            final List<VideoMidiNoteMapping> mappings = getVideoMidiNoteMappings().stream()
+                    .filter(videoMidiNoteMapping -> videoMidiNoteMapping.getMidiNote() != null)
+                    .collect(Collectors.toList());
+            SwingUtilities
+                    .invokeLater(() -> startVideo(mappings, (MidiDevice.Info) midiPortComboBox.getSelectedItem()));
         });
 
         final GroupLayout bottomPanelLayout = new GroupLayout(bottomPanel);
         bottomPanel.setLayout(bottomPanelLayout);
-        bottomPanelLayout.setHorizontalGroup(
-                bottomPanelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
-                        .addGroup(bottomPanelLayout.createSequentialGroup()
-                                .addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(startButton)
-                                .addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-        );
-        bottomPanelLayout.setVerticalGroup(
-                bottomPanelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
-                        .addGroup(bottomPanelLayout.createSequentialGroup()
-                                .addContainerGap()
-                                .addComponent(startButton)
-                                .addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-        );
+        bottomPanelLayout.setHorizontalGroup(bottomPanelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
+                .addGroup(bottomPanelLayout.createSequentialGroup()
+                        .addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE).addComponent(startButton)
+                        .addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)));
+        bottomPanelLayout.setVerticalGroup(bottomPanelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
+                .addGroup(bottomPanelLayout.createSequentialGroup().addContainerGap().addComponent(startButton)
+                        .addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)));
     }
 
     private List<VideoMidiNoteMapping> getVideoMidiNoteMappings() {
@@ -371,10 +409,13 @@ public class App extends JFrame {
     }
 
     private void startVideo(final List<VideoMidiNoteMapping> mappings, final MidiDevice.Info deviceInfo) {
-        preferences.setMidiPort(deviceInfo.getName());
-        final VideoPlayer videoPlayer = new VideoPlayer(options);
-        videoPlayer.start(deviceInfo, mappings);
+        videoPlayer = new VideoPlayer(options);
+        if (options.isBonjour()) {
+            videoPlayer.startRtpMidi(mappings);
+        } else {
+            preferences.setMidiPort(deviceInfo.getName());
+            videoPlayer.start(deviceInfo, mappings);
+        }
     }
-
 
 }
