@@ -15,4 +15,7 @@ public class Options {
     @Parameter(names={"-b","--bonjour"},description = "Enable bonjour")
     private boolean bonjour = false;
 
+    @Parameter(names = {"-i", "--interface"}, description = "Network interface to bind JmDNS to")
+    private String networkInterfaceName;
+
 }

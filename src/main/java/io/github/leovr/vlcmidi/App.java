@@ -44,10 +44,15 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
+import java.net.Inet4Address;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -109,8 +114,24 @@ public class App extends JFrame {
 
 
     private void startBonjour() {
+        if (!options.isBonjour()) {
+            return;
+        }
         try {
-            jmdns = JmDNS.create(InetAddress.getLocalHost());
+            final String interfaceName = Optional.ofNullable(options.getNetworkInterfaceName()).orElse("");
+            final InetAddress jmDnsInetAddress = Collections.list(NetworkInterface.getNetworkInterfaces()).stream()
+                    .filter(networkInterface -> networkInterface.getName().equals(interfaceName))
+                    .findFirst().flatMap(networkInterface -> Collections.list(networkInterface.getInetAddresses()).stream()
+                            .filter(inetAddress -> inetAddress instanceof Inet4Address).findFirst()
+                    ).orElseGet(() -> {
+                        try {
+                            return InetAddress.getLocalHost();
+                        } catch (UnknownHostException e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
+
+            jmdns = JmDNS.create(jmDnsInetAddress);
             final ServiceInfo serviceInfo =
                     ServiceInfo.create("_apple-midi._udp.local.", "VLC MIDI Player", 50004, "apple-midi");
             jmdns.registerService(serviceInfo);
