@@ -69,7 +69,6 @@ public class App extends JFrame {
     private VlcMidiPreferences preferences;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final Options options;
-    private VideoPlayer videoPlayer;
     private JmDNS jmdns;
 
     public App(final Options options) {
@@ -120,13 +119,13 @@ public class App extends JFrame {
         try {
             final String interfaceName = Optional.ofNullable(options.getNetworkInterfaceName()).orElse("");
             final InetAddress jmDnsInetAddress = Collections.list(NetworkInterface.getNetworkInterfaces()).stream()
-                    .filter(networkInterface -> networkInterface.getName().equals(interfaceName))
-                    .findFirst().flatMap(networkInterface -> Collections.list(networkInterface.getInetAddresses()).stream()
-                            .filter(inetAddress -> inetAddress instanceof Inet4Address).findFirst()
-                    ).orElseGet(() -> {
+                    .filter(networkInterface -> networkInterface.getName().equals(interfaceName)).findFirst().flatMap(
+                            networkInterface -> Collections.list(networkInterface.getInetAddresses()).stream()
+                                    .filter(inetAddress -> inetAddress instanceof Inet4Address).findFirst())
+                    .orElseGet(() -> {
                         try {
                             return InetAddress.getLocalHost();
-                        } catch (UnknownHostException e) {
+                        } catch (final UnknownHostException e) {
                             throw new RuntimeException(e);
                         }
                     });
@@ -443,7 +442,7 @@ public class App extends JFrame {
     }
 
     private void startVideo(final List<VideoMidiNoteMapping> mappings, final MidiDevice.Info deviceInfo) {
-        videoPlayer = new VideoPlayer(options);
+        final VideoPlayer videoPlayer = new VideoPlayer(options);
         if (options.isBonjour()) {
             videoPlayer.startRtpMidi(mappings);
         } else {
