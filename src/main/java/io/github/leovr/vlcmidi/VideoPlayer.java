@@ -47,8 +47,8 @@ public class VideoPlayer {
         }
     }
 
-    public static final String BLACK_PANEL = "blackPanel";
-    public static final String VIDEO_PLAYER = "videoPlayer";
+    private static final String BLACK_PANEL = "blackPanel";
+    private static final String VIDEO_PLAYER = "videoPlayer";
     private final JFrame frame;
 
     private final EmbeddedMediaListPlayerComponent mediaPlayerComponent;
