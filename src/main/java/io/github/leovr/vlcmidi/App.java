@@ -109,6 +109,17 @@ public class App extends JFrame {
 
         setVisible(true);
 
+        if (!options.getVideoMappings().isEmpty()) {
+            final String firstFilename = options.getVideoMappings().get(0);
+            final boolean successful = loadVideoList(new File(firstFilename));
+            if (successful) {
+                final List<VideoMidiNoteMapping> mappings = getValidVideoMidiNoteMappings();
+                if (!mappings.isEmpty()) {
+                    startVideo(mappings, (MidiDevice.Info) midiPortComboBox.getSelectedItem());
+                }
+            }
+        }
+
     }
 
 
@@ -230,17 +241,19 @@ public class App extends JFrame {
         }
     }
 
-    private void loadVideoList(final File loadDestination) {
+    private boolean loadVideoList(final File loadDestination) {
         if (!loadDestination.exists()) {
-            return;
+            return false;
         }
 
         try {
             final VlcMidiSaveFile saveFile = objectMapper.readValue(loadDestination, VlcMidiSaveFile.class);
             fillTableModel(saveFile.getMappings());
+            return true;
         } catch (final IOException e) {
             log.error("Could not read save file: {}", loadDestination, e);
         }
+        return false;
     }
 
     private void fillTableModel(final List<VideoMidiNoteMapping> mappings) {
@@ -414,9 +427,7 @@ public class App extends JFrame {
             if (tableModel.getRowCount() <= 0) {
                 return;
             }
-            final List<VideoMidiNoteMapping> mappings = getVideoMidiNoteMappings().stream()
-                    .filter(videoMidiNoteMapping -> videoMidiNoteMapping.getMidiNote() != null)
-                    .collect(Collectors.toList());
+            final List<VideoMidiNoteMapping> mappings = getValidVideoMidiNoteMappings();
             SwingUtilities
                     .invokeLater(() -> startVideo(mappings, (MidiDevice.Info) midiPortComboBox.getSelectedItem()));
         });
@@ -430,6 +441,12 @@ public class App extends JFrame {
         bottomPanelLayout.setVerticalGroup(bottomPanelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
                 .addGroup(bottomPanelLayout.createSequentialGroup().addContainerGap().addComponent(startButton)
                         .addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)));
+    }
+
+    private List<VideoMidiNoteMapping> getValidVideoMidiNoteMappings() {
+        return getVideoMidiNoteMappings().stream()
+                .filter(videoMidiNoteMapping -> videoMidiNoteMapping.getMidiNote() != null)
+                .collect(Collectors.toList());
     }
 
     private List<VideoMidiNoteMapping> getVideoMidiNoteMappings() {
