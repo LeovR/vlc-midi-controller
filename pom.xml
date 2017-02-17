@@ -16,6 +16,38 @@
         <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
 
+    <description>VLC-MIDI Videoplayer</description>
+    <url>https://github.com/leovr/vlc-midi-controller</url>
+
+    <issueManagement>
+        <url>https://github.com/leovr/vlc-midi-controller/issues</url>
+        <system>GitHub Issues</system>
+    </issueManagement>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <scm>
+        <url>https://github.com/leovr/vlc-midi-controller</url>
+        <connection>scm:git:git://github.com/leovr/vlc-midi-controller.git</connection>
+        <developerConnection>scm:git:git@github.com:leovr/vlc-midi-controller.git</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
+
+    <developers>
+        <developer>
+            <email>jan.marten@gmx.de</email>
+            <name>Jan Marten</name>
+            <url>https://leovr.github.io</url>
+            <id>janmarten</id>
+        </developer>
+    </developers>
+
     <build>
         <!--<finalName>vlc-midi-controller</finalName>-->
         <plugins>
@@ -42,6 +74,11 @@
                     <attach>false</attach>
                     <appendAssemblyId>true</appendAssemblyId>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>2.5.3</version>
             </plugin>
         </plugins>
         <pluginManagement>
@@ -95,7 +132,7 @@
         <dependency>
             <groupId>io.github.leovr</groupId>
             <artifactId>rtp-midi</artifactId>
-            <version>1.0.2</version>
+            <version>1.0.3</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
