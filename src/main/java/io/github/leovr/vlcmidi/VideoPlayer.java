@@ -213,9 +213,6 @@ public class VideoPlayer {
                 }
                 SwingUtilities.invokeLater(() -> {
                     showVideoPlayer();
-                    if (!options.isSound()) {
-                        mediaPlayer.mute();
-                    }
                     mediaPlayer.prepareMedia(mediaListPlayer.getMediaList().items().get(index).mrl());
                 });
             }
@@ -226,7 +223,12 @@ public class VideoPlayer {
                 if (index == null) {
                     return;
                 }
-                SwingUtilities.invokeLater(() -> mediaListPlayer.playItem(index));
+                SwingUtilities.invokeLater(() -> {
+                    mediaListPlayer.playItem(index);
+                    if (!options.isSound()) {
+                        mediaPlayer.mute();
+                    }
+                });
             }
         });
     }
