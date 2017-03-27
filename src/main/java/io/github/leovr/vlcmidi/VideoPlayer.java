@@ -33,6 +33,8 @@ import java.util.Map;
 public class VideoPlayer {
 
 
+    private final Options options;
+
     @EqualsAndHashCode
     private static class MidiNoteKey {
 
@@ -60,6 +62,7 @@ public class VideoPlayer {
     private AppleMidiServer appleMidiServer;
 
     public VideoPlayer(final Options options) {
+        this.options = options;
         frame = new JFrame("Video Player");
         frame.setBounds(100, 100, 600, 400);
         frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
@@ -210,6 +213,9 @@ public class VideoPlayer {
                 }
                 SwingUtilities.invokeLater(() -> {
                     showVideoPlayer();
+                    if (!options.isSound()) {
+                        mediaPlayer.mute();
+                    }
                     mediaPlayer.prepareMedia(mediaListPlayer.getMediaList().items().get(index).mrl());
                 });
             }
