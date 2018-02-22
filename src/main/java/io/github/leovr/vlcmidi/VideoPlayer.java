@@ -22,10 +22,13 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import java.awt.CardLayout;
 import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.Point;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.image.BufferedImage;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -86,6 +89,7 @@ public class VideoPlayer {
                 switch (e.getKeyCode()) {
                     case KeyEvent.VK_ESCAPE:
                         mediaPlayer.setFullScreen(false);
+                        normalCursor();
                         break;
                     case KeyEvent.VK_ENTER:
                         mediaPlayer.setFullScreen(!mediaPlayer.isFullScreen());
@@ -109,6 +113,11 @@ public class VideoPlayer {
             public void mousePressed(final MouseEvent e) {
                 if (e.getClickCount() == 2) {
                     mediaPlayer.toggleFullScreen();
+                    if (mediaPlayer.isFullScreen()) {
+                        transparentCursor();
+                    } else {
+                        normalCursor();
+                    }
                 }
             }
 
@@ -137,6 +146,10 @@ public class VideoPlayer {
 
     }
 
+    private void normalCursor() {
+        frame.setCursor(Cursor.getDefaultCursor());
+    }
+
     private void blackScreen() {
         cardLayout.show(frame.getContentPane(), BLACK_PANEL);
     }
@@ -147,7 +160,7 @@ public class VideoPlayer {
 
         initMidi(deviceInfo);
 
-        mediaPlayer.setFullScreen(true);
+        start();
     }
 
     public void startRtpMidi(final List<VideoMidiNoteMapping> mappings) {
@@ -155,7 +168,17 @@ public class VideoPlayer {
 
         initRtpMidi();
 
+        start();
+    }
+
+    private void start() {
         mediaPlayer.setFullScreen(true);
+        transparentCursor();
+    }
+
+    private void transparentCursor() {
+        frame.setCursor(frame.getToolkit()
+                .createCustomCursor(new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB), new Point(), null));
     }
 
     private void initRtpMidi() {
