@@ -4,8 +4,7 @@ import com.beust.jcommander.JCommander;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.leovr.vlcmidi.midi.MidiNote;
 import lombok.extern.slf4j.Slf4j;
-import uk.co.caprica.vlcj.discovery.NativeDiscovery;
-import uk.co.caprica.vlcj.filter.VideoFileFilter;
+import uk.co.caprica.vlcj.factory.discovery.NativeDiscovery;
 
 import javax.jmdns.JmDNS;
 import javax.jmdns.ServiceInfo;
@@ -174,7 +173,7 @@ public class App extends JFrame {
     private void initComponents() {
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (ClassNotFoundException | InstantiationException | UnsupportedLookAndFeelException | IllegalAccessException e) {
+        } catch (final ClassNotFoundException | InstantiationException | UnsupportedLookAndFeelException | IllegalAccessException e) {
             log.error("Could not load system look and feel", e);
             System.exit(1);
         }
@@ -304,8 +303,8 @@ public class App extends JFrame {
         videoFilesPanel.setBorder(BorderFactory.createTitledBorder("Video Dateien"));
 
         tableModel = new DefaultTableModel(new Object[][]{}, new String[]{"Video Datei", "MIDI Note"}) {
-            Class[] types = new Class[]{File.class, MidiNote.class};
-            boolean[] canEdit = new boolean[]{false, true};
+            final Class[] types = new Class[]{File.class, MidiNote.class};
+            final boolean[] canEdit = new boolean[]{false, true};
 
             public Class getColumnClass(final int columnIndex) {
                 return types[columnIndex];
@@ -364,8 +363,6 @@ public class App extends JFrame {
         addVideosButton.setText("Video hinzufügen");
         addVideosButton.addActionListener(e -> {
             final JFileChooser fileChooser = new JFileChooser(preferences.getCurrentDirectory());
-            fileChooser
-                    .setFileFilter(new FileNameExtensionFilter("Video Dateien", new VideoFileFilter().getExtensions()));
             fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
             fileChooser.setMultiSelectionEnabled(true);
             final int returnValue = fileChooser.showDialog(this, "Hinzufügen");
@@ -418,7 +415,6 @@ public class App extends JFrame {
         pack();
     }
 
-    @SuppressWarnings("unchecked")
     private void initBottomPanel() {
         bottomPanel = new JPanel();
         final JButton startButton = new JButton();

@@ -7,11 +7,13 @@ import io.github.leovr.vlcmidi.midi.MidiNote;
 import io.github.leovr.vlcmidi.midi.MidiNoteListenerAdapter;
 import io.github.leovr.vlcmidi.midi.MidiNoteReceiver;
 import lombok.EqualsAndHashCode;
-import uk.co.caprica.vlcj.component.EmbeddedMediaListPlayerComponent;
-import uk.co.caprica.vlcj.medialist.MediaList;
-import uk.co.caprica.vlcj.player.MediaPlayer;
-import uk.co.caprica.vlcj.player.embedded.DefaultAdaptiveRuntimeFullScreenStrategy;
+import uk.co.caprica.vlcj.factory.MediaPlayerFactory;
+import uk.co.caprica.vlcj.medialist.MediaApi;
+import uk.co.caprica.vlcj.player.base.MediaPlayer;
+import uk.co.caprica.vlcj.player.component.EmbeddedMediaListPlayerComponent;
+import uk.co.caprica.vlcj.player.component.MediaPlayerSpecs;
 import uk.co.caprica.vlcj.player.embedded.EmbeddedMediaPlayer;
+import uk.co.caprica.vlcj.player.embedded.fullscreen.adaptive.AdaptiveFullScreenStrategy;
 import uk.co.caprica.vlcj.player.list.MediaListPlayer;
 
 import javax.sound.midi.MidiDevice;
@@ -83,16 +85,27 @@ public class VideoPlayer {
             }
         });
 
-        mediaPlayerComponent = new EmbeddedMediaListPlayerComponent() {
+        final String[] args;
+        if (options.getCachingMilliseconds() == null) {
+            args = new String[]{"--video-title=vlcj video output", "--no-snapshot-preview", "--quiet", "--intf=dummy",
+                    "--file-caching=0", "--disc-caching=0"};
+        } else {
+            args = new String[]{"--video-title=vlcj video output", "--no-snapshot-preview", "--quiet", "--intf=dummy",
+                    "--file-caching=" + options.getCachingMilliseconds(),
+                    "--disc-caching=" + options.getCachingMilliseconds()};
+        }
+
+        mediaPlayerComponent = new EmbeddedMediaListPlayerComponent(
+                MediaPlayerSpecs.embeddedMediaPlayerSpec().withFactory(new MediaPlayerFactory(args))) {
             @Override
             public void keyPressed(final KeyEvent e) {
                 switch (e.getKeyCode()) {
                     case KeyEvent.VK_ESCAPE:
-                        mediaPlayer.setFullScreen(false);
+                        mediaPlayer.fullScreen().set(false);
                         normalCursor();
                         break;
                     case KeyEvent.VK_ENTER:
-                        mediaPlayer.setFullScreen(!mediaPlayer.isFullScreen());
+                        mediaPlayer.fullScreen().toggle();
                         break;
                     case KeyEvent.VK_SPACE:
                         stop();
@@ -101,19 +114,10 @@ public class VideoPlayer {
             }
 
             @Override
-            protected String[] onGetMediaPlayerFactoryExtraArgs() {
-                if (options.getCachingMilliseconds() == null) {
-                    return new String[]{"--file-caching=0", "--disc-caching=0"};
-                }
-                return new String[]{"--file-caching=" + options.getCachingMilliseconds(),
-                        "--disc-caching=" + options.getCachingMilliseconds()};
-            }
-
-            @Override
             public void mousePressed(final MouseEvent e) {
                 if (e.getClickCount() == 2) {
-                    mediaPlayer.toggleFullScreen();
-                    if (mediaPlayer.isFullScreen()) {
+                    mediaPlayer.fullScreen().toggle();
+                    if (mediaPlayer.fullScreen().isFullScreen()) {
                         transparentCursor();
                     } else {
                         normalCursor();
@@ -133,16 +137,16 @@ public class VideoPlayer {
         final JPanel blackPanel = new JPanel();
         blackPanel.setBackground(Color.BLACK);
         frame.getContentPane().add(blackPanel, BLACK_PANEL);
-        mediaPlayer = mediaPlayerComponent.getMediaPlayer();
+        mediaPlayer = mediaPlayerComponent.mediaPlayer();
         frame.setVisible(true);
-        mediaListPlayer = mediaPlayerComponent.getMediaListPlayer();
-        mediaPlayer.setFullScreenStrategy(new DefaultAdaptiveRuntimeFullScreenStrategy(frame));
+        mediaListPlayer = mediaPlayerComponent.mediaListPlayer();
+        mediaPlayer.fullScreen().strategy(new AdaptiveFullScreenStrategy(frame));
 
         if (!options.isSound()) {
-            mediaPlayer.mute();
+            mediaPlayer.audio().mute();
         }
 
-        mediaPlayer.setRepeat(false);
+        mediaPlayer.controls().setRepeat(false);
 
     }
 
@@ -172,7 +176,7 @@ public class VideoPlayer {
     }
 
     private void start() {
-        mediaPlayer.setFullScreen(true);
+        mediaPlayer.fullScreen().set(true);
         transparentCursor();
     }
 
@@ -223,7 +227,7 @@ public class VideoPlayer {
 
     private void stop() {
         blackScreen();
-        mediaListPlayer.stop();
+        mediaListPlayer.controls().stop();
     }
 
     private void registerMidiNoteListener(final MidiNoteReceiver receiver) {
@@ -236,7 +240,7 @@ public class VideoPlayer {
                 }
                 SwingUtilities.invokeLater(() -> {
                     showVideoPlayer();
-                    mediaPlayer.prepareMedia(mediaListPlayer.getMediaList().items().get(index).mrl());
+                    mediaPlayer.media().prepare(mediaListPlayer.list().media().mrl(index));
                 });
             }
 
@@ -247,9 +251,9 @@ public class VideoPlayer {
                     return;
                 }
                 SwingUtilities.invokeLater(() -> {
-                    mediaListPlayer.playItem(index);
+                    mediaListPlayer.controls().play(index);
                     if (!options.isSound()) {
-                        mediaPlayer.mute();
+                        mediaPlayer.audio().mute();
                     }
                 });
             }
@@ -261,12 +265,12 @@ public class VideoPlayer {
     }
 
     private void initMediaList(final List<VideoMidiNoteMapping> mappings) {
-        final MediaList mediaList = mediaListPlayer.getMediaList();
+        final MediaApi mediaApi = mediaListPlayer.list().media();
 
         midiNoteMapping.clear();
         for (int i = 0; i < mappings.size(); i++) {
             final VideoMidiNoteMapping mapping = mappings.get(i);
-            mediaList.addMedia(mapping.getFile().getAbsolutePath());
+            mediaApi.add(mapping.getFile().getAbsolutePath());
             midiNoteMapping.put(new MidiNoteKey(mapping.getMidiNote()), i);
         }
     }
