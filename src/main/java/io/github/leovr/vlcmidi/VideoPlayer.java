@@ -252,6 +252,7 @@ public class VideoPlayer {
                 }
                 SwingUtilities.invokeLater(() -> {
                     mediaListPlayer.controls().play(index);
+                    showVideoPlayer();
                     if (!options.isSound()) {
                         mediaPlayer.audio().mute();
                     }
