@@ -253,8 +253,10 @@ public class VideoPlayer {
             public void onMidiNoteEnd(final MidiNote midiNote) {
                 final Integer index = midiNoteMapping.get(new MidiNoteKey(midiNote));
                 if (index == null) {
+                    log.debug("Could not find a mapping for {}", midiNote);
                     return;
                 }
+                log.debug("Found index {} for note {}", index, midiNote);
                 SwingUtilities.invokeLater(() -> {
                     log.info("Starting video {}", index);
                     mediaListPlayer.controls().play(index);
