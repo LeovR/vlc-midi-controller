@@ -7,6 +7,7 @@ import io.github.leovr.vlcmidi.midi.MidiNote;
 import io.github.leovr.vlcmidi.midi.MidiNoteListenerAdapter;
 import io.github.leovr.vlcmidi.midi.MidiNoteReceiver;
 import lombok.EqualsAndHashCode;
+import lombok.extern.slf4j.Slf4j;
 import uk.co.caprica.vlcj.factory.MediaPlayerFactory;
 import uk.co.caprica.vlcj.medialist.MediaApi;
 import uk.co.caprica.vlcj.player.base.MediaPlayer;
@@ -35,6 +36,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 public class VideoPlayer {
 
 
@@ -251,6 +253,7 @@ public class VideoPlayer {
                     return;
                 }
                 SwingUtilities.invokeLater(() -> {
+                    log.info("Starting video {}", index);
                     mediaListPlayer.controls().play(index);
                     showVideoPlayer();
                     if (!options.isSound()) {
