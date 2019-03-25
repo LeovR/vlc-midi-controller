@@ -3,7 +3,7 @@
 
     <groupId>io.github.leovr</groupId>
     <artifactId>vlc-midi</artifactId>
-    <version>1.0.9-SNAPSHOT</version>
+    <version>1.0.9</version>
     <packaging>jar</packaging>
 
     <name>vlc-midi</name>
@@ -36,7 +36,7 @@
         <url>https://github.com/leovr/vlc-midi-controller</url>
         <connection>scm:git:git://github.com/leovr/vlc-midi-controller.git</connection>
         <developerConnection>scm:git:git@github.com:leovr/vlc-midi-controller.git</developerConnection>
-        <tag>HEAD</tag>
+        <tag>vlc-midi-1.0.9</tag>
     </scm>
 
     <developers>
