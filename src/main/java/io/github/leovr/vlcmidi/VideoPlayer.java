@@ -16,6 +16,7 @@ import uk.co.caprica.vlcj.player.component.MediaPlayerSpecs;
 import uk.co.caprica.vlcj.player.embedded.EmbeddedMediaPlayer;
 import uk.co.caprica.vlcj.player.embedded.fullscreen.adaptive.AdaptiveFullScreenStrategy;
 import uk.co.caprica.vlcj.player.list.MediaListPlayer;
+import uk.co.caprica.vlcj.player.list.PlaybackMode;
 
 import javax.sound.midi.MidiDevice;
 import javax.sound.midi.MidiSystem;
@@ -149,6 +150,7 @@ public class VideoPlayer {
         }
 
         mediaPlayer.controls().setRepeat(false);
+        mediaListPlayer.controls().setMode(PlaybackMode.DEFAULT);
 
     }
 
