@@ -130,8 +130,7 @@ public class VideoPlayer {
 
             @Override
             public void finished(final MediaPlayer mediaPlayer) {
-                mediaListPlayer.controls().stop();
-                blackScreen();
+                stop();
             }
         };
 
@@ -231,8 +230,10 @@ public class VideoPlayer {
     }
 
     private void stop() {
-        blackScreen();
-        mediaListPlayer.controls().stop();
+        SwingUtilities.invokeLater(() -> {
+            blackScreen();
+            mediaListPlayer.controls().stop();
+        });
     }
 
     private void registerMidiNoteListener(final MidiNoteReceiver receiver) {
