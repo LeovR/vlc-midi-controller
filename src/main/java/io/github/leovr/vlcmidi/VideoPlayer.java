@@ -130,6 +130,7 @@ public class VideoPlayer {
 
             @Override
             public void finished(final MediaPlayer mediaPlayer) {
+                mediaListPlayer.controls().stop();
                 blackScreen();
             }
         };
