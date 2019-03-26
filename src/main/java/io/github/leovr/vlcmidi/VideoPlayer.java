@@ -24,10 +24,12 @@ import javax.sound.midi.MidiUnavailableException;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
+import javax.swing.event.MouseInputAdapter;
 import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Point;
+import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
@@ -118,14 +120,7 @@ public class VideoPlayer {
 
             @Override
             public void mousePressed(final MouseEvent e) {
-                if (e.getClickCount() == 2) {
-                    mediaPlayer.fullScreen().toggle();
-                    if (mediaPlayer.fullScreen().isFullScreen()) {
-                        transparentCursor();
-                    } else {
-                        normalCursor();
-                    }
-                }
+                mousePressedHandler(e);
             }
 
             @Override
@@ -139,6 +134,27 @@ public class VideoPlayer {
         frame.getContentPane().add(mediaPlayerComponent, VIDEO_PLAYER);
         final JPanel blackPanel = new JPanel();
         blackPanel.setBackground(Color.BLACK);
+        blackPanel.addMouseListener(new MouseInputAdapter() {
+            @Override
+            public void mousePressed(final MouseEvent e) {
+                mousePressedHandler(e);
+            }
+        });
+        blackPanel.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(final KeyEvent e) {
+                switch (e.getKeyCode()) {
+                    case KeyEvent.VK_ESCAPE:
+                        mediaPlayer.fullScreen().set(false);
+                        normalCursor();
+                        break;
+                    case KeyEvent.VK_ENTER:
+                        mediaPlayer.fullScreen().toggle();
+                        break;
+                }
+            }
+        });
+
         frame.getContentPane().add(blackPanel, BLACK_PANEL);
         mediaPlayer = mediaPlayerComponent.mediaPlayer();
         frame.setVisible(true);
@@ -152,6 +168,17 @@ public class VideoPlayer {
         mediaPlayer.controls().setRepeat(false);
         mediaListPlayer.controls().setMode(PlaybackMode.DEFAULT);
 
+    }
+
+    private void mousePressedHandler(final MouseEvent e) {
+        if (e.getClickCount() == 2) {
+            mediaPlayer.fullScreen().toggle();
+            if (mediaPlayer.fullScreen().isFullScreen()) {
+                transparentCursor();
+            } else {
+                normalCursor();
+            }
+        }
     }
 
     private void normalCursor() {
@@ -260,8 +287,8 @@ public class VideoPlayer {
                 log.debug("Found index {} for note {}", index, midiNote);
                 SwingUtilities.invokeLater(() -> {
                     log.info("Starting video {}", index);
-                    mediaListPlayer.controls().play(index);
                     showVideoPlayer();
+                    mediaListPlayer.controls().play(index);
                     if (!options.isSound()) {
                         mediaPlayer.audio().mute();
                     }
